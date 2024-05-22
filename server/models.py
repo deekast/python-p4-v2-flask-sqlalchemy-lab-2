@@ -10,8 +10,9 @@ metadata = MetaData(naming_convention={
 
 db = SQLAlchemy(metadata=metadata)
 
+# Customer should exclude reviews.customer
 
-class Customer(db.Model):
+class Customer(db.Model, SerializerMixin):
     __tablename__ = 'customers'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -21,12 +22,15 @@ class Customer(db.Model):
 
     items = association_proxy('reviews', 'item')
 
+    serialize_rules = ('-reviews.customer',)
+
+
 
     def __repr__(self):
         return f'<Customer {self.id}, {self.name}>'
 
-
-class Item(db.Model):
+# Item should exclude reviews.item
+class Item(db.Model, SerializerMixin):
     __tablename__ = 'items'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -36,12 +40,15 @@ class Item(db.Model):
     reviews = db.relationship('Review', back_populates='item')
     customers = association_proxy('reviews', 'customer')
 
+    serialize_rules = ('-reviews.item',)
+
 
     def __repr__(self):
         return f'<Item {self.id}, {self.name}, {self.price}>'
     
 
-class Review(db.Model): 
+# Review should exclude customer.reviews and item.reviews
+class Review(db.Model, SerializerMixin): 
 
     __tablename__ = 'reviews'
     id = db.Column(db.Integer, primary_key=True)
@@ -52,11 +59,4 @@ class Review(db.Model):
     customer = db.relationship('Customer', back_populates ='reviews')
     item = db.relationship('Item', back_populates ='reviews')
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'comment': self.comment,
-            'customer': self.customer.to_dict(),
-            'item': self.item.to_dict()
-
-        }
+    serialize_rules = ('-customer.reviews','-item.reviews',)
